@@ -1,6 +1,6 @@
 {
   "name": "quill-magic-url",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Checks for URLs during typing and pasting and automatically converts them to links.",
   "main": "dist/index.js",
   "babel": {
@@ -25,7 +25,7 @@
     "paste",
     "type"
   ],
-  "author": "Jörg Bayreuther <jb@visualjerk.de> (https://github.com/visualjerk)",
+  "author": "iKoru <glassonyou@gmail.com> (https://github.com/visualjerk)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/visualjerk/quill-magic-url/issues"
