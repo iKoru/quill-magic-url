@@ -7,9 +7,10 @@ module.exports = {
     libraryTarget: 'umd',
     filename: "./dist/index.js"
   },
+  mode: 'development',
   devServer: {
     contentBase: './demo',
-    port:'8082'
+    port: '8082'
   },
   module: {
     rules: [
@@ -20,7 +21,7 @@ module.exports = {
         use: [{
           loader: 'babel-loader',
           options: {
-            "presets": [["es2015", {"modules": false}]]
+            "presets": [["es2015", { "modules": false }]]
           }
         }]
       },

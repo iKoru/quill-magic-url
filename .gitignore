@@ -60,3 +60,5 @@ typings/
 # PHP Storm
 .idea
 .idea/*
+
+yarn.lock

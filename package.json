@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "webpack -p --progress --colors",
-    "dev": "webpack-dev-server --open --progress --colors"
+    "dev": "webpack-dev-server --hot --inline"
   },
   "repository": {
     "type": "git",

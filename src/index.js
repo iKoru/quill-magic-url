@@ -5,7 +5,8 @@ const defaults = {
   globalRegularExpression: /(https?:\/\/|www\.)[\S]+/g,
   urlRegularExpression: /(https?:\/\/[\S]+)|(www.[\S]+)/,
   normalizeRegularExpression: /(https?:\/\/[\S]+)|(www.[\S]+)/,
-  youtubeRegularExpression: /(?:https?\:\/\/)?(?:(?:www\.)?youtube\.com|youtu\.?be)\/[\S]+/,
+  youtubeRegularExpression: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([^& \n<]+)(?:[^ \n<]+)?/,
+  globalYoutubeRegularExpression: /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([^& \n<]+)(?:[^ \n<]+)?/g,
   normalizeUrlOptions: {
     stripFragment: false,
     stripWWW: false
@@ -13,32 +14,40 @@ const defaults = {
 }
 
 export default class MagicUrl {
-  constructor (quill, options) {
+  constructor(quill, options) {
     this.quill = quill
     options = options || {}
-    this.options = {...defaults, ...options}
+    this.options = { ...defaults, ...options }
     this.registerTypeListener()
     this.registerPasteListener()
   }
-  registerPasteListener () {
+  registerPasteListener() {
     this.quill.clipboard.addMatcher(Node.TEXT_NODE, (node, delta) => {
       if (typeof node.data !== 'string') {
         return
       }
-      const youtube = node.data.match(this.options.youtubeRegularExpression)
+      const youtube = node.data.match(this.options.globalYoutubeRegularExpression)
       if (youtube && youtube.length > 0) {
         const newDelta = new Delta()
-        let str = node.data
-        youtube.forEach(match => {
-          const split = str.split(match)
-          const beforeLink = split.shift()
-          newDelta.insert(beforeLink)
-          newDelta.insert({video:match})
-          str = split.join(match)
+        let str = node.data;
+        let parse
+        youtube.forEach(matches => {
+          parse = matches.match(this.options.youtubeRegularExpression);
+          parse.forEach((match, index) => {
+            if (index === 0) {
+              const split = str.split(match);
+              newDelta.insert(split.shift())
+                .insert(match, { link: match });
+              str = split.join(match)
+            } else {
+              newDelta.insert('\n')
+                .insert({ video: 'https://www.youtube.com/embed/' + match })
+            }
+          })
         })
-        newDelta.insert(str)
+        newDelta.insert(str);
         delta.ops = newDelta.ops
-      }else{
+      } else {
         const matches = node.data.match(this.options.globalRegularExpression)
         if (matches && matches.length > 0) {
           const newDelta = new Delta()
@@ -47,7 +56,7 @@ export default class MagicUrl {
             const split = str.split(match)
             const beforeLink = split.shift()
             newDelta.insert(beforeLink)
-            newDelta.insert(match, {link: match})
+              .insert(match, { link: match })
             str = split.join(match)
           })
           newDelta.insert(str)
@@ -57,7 +66,7 @@ export default class MagicUrl {
       return delta
     })
   }
-  registerTypeListener () {
+  registerTypeListener() {
     this.quill.on('text-change', (delta) => {
       let ops = delta.ops
       // Only return true, if last operation includes whitespace inserts
@@ -72,7 +81,7 @@ export default class MagicUrl {
       this.checkTextForUrl()
     })
   }
-  checkTextForUrl () {
+  checkTextForUrl() {
     let sel = this.quill.getSelection()
     if (!sel) {
       return
@@ -81,31 +90,38 @@ export default class MagicUrl {
     if (!leaf.text || leaf.parent.domNode.localName === "a") {
       return
     }
+    let leafIndex = this.quill.getIndex(leaf)
     let urlMatch = leaf.text.match(this.options.youtubeRegularExpression)
-    if(urlMatch){
-      let leafIndex = this.quill.getIndex(leaf)
-      let index = leafIndex + urlMatch.index
-      
-      this.textToUrl(index, urlMatch[0], 'video')
-    }else{
+
+    if (urlMatch) {
+      const newDelta = new Delta()
+      newDelta.retain(leafIndex + urlMatch.index)
+      urlMatch.forEach((match, index) => {
+        if (index === 0) {
+          newDelta.delete(match.length)
+            .insert(match, { link: match })
+        } else {
+          newDelta.insert('\n')
+            .insert({ video: 'https://www.youtube.com/embed/' + match })
+        }
+      })
+      this.quill.updateContents(newDelta);
+    } else {
       urlMatch = leaf.text.match(this.options.urlRegularExpression)
       if (!urlMatch) {
         return
       }
-      let leafIndex = this.quill.getIndex(leaf)
-      let index = leafIndex + urlMatch.index
-      
-      this.textToUrl(index, urlMatch[0])
+      this.textToUrl(leafIndex + urlMatch.index, urlMatch[0])
     }
   }
-  textToUrl (index, url, type = 'link') {
+  textToUrl(index, url) {
     const ops = new Delta()
       .retain(index)
       .delete(url.length)
-      .insert(type === 'link'?url:{video: this.normalize(url)}, type === 'link'?{link: this.normalize(url)} : undefined)
+      .insert(url, { link: this.normalize(url) })
     this.quill.updateContents(ops)
   }
-  normalize (url) {
+  normalize(url) {
     if (this.options.normalizeRegularExpression.test(url)) {
       return normalizeUrl(url, this.options.normalizeUrlOptions)
     }
