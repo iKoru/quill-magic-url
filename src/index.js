@@ -33,7 +33,7 @@ export default class MagicUrl {
           const split = str.split(match)
           const beforeLink = split.shift()
           newDelta.insert(beforeLink)
-          newDelta.insert(match, {video: match})
+          newDelta.insert({video:match})
           str = split.join(match)
         })
         newDelta.insert(str)
@@ -102,7 +102,7 @@ export default class MagicUrl {
     const ops = new Delta()
       .retain(index)
       .delete(url.length)
-      .insert(url, type === 'link'?{link: this.normalize(url)} : {video: this.normalize(url)})
+      .insert(type === 'link'?url:{video: this.normalize(url)}, type === 'link'?{link: this.normalize(url)} : undefined)
     this.quill.updateContents(ops)
   }
   normalize (url) {
