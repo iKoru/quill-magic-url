@@ -26,8 +26,9 @@ export default class MagicUrl {
       if (typeof node.data !== 'string') {
         return
       }
-      const youtube = node.data.match(this.options.globalYoutubeRegularExpression).filter(x => x)
-      if (youtube && youtube.length > 0) {
+      let youtube = node.data.match(this.options.globalYoutubeRegularExpression);
+      if (youtube && youtube.filter(x => x).length > 0) {
+        youtube = youtube.filter(x => x)
         const newDelta = new Delta()
         let str = node.data;
         let parse
@@ -48,8 +49,9 @@ export default class MagicUrl {
         newDelta.insert(str);
         delta.ops = newDelta.ops
       } else {
-        const matches = node.data.match(this.options.globalRegularExpression).filter(x => x)
-        if (matches && matches.length > 0) {
+        let matches = node.data.match(this.options.globalRegularExpression)
+        if (matches && matches.filter(x => x).length > 0) {
+          matches = matches.filter(x => x)
           const newDelta = new Delta()
           let str = node.data
           matches.forEach(match => {
